@@ -39,9 +39,14 @@ fn main() {
 
     if let Some(ref f_path) = matches.value_of("CONFIG") {
         // Reset rules if "reset" argument is present
-        if matches.is_present("RESET") {
+        reset_rules(matches.is_present("RESET"));
+/*        if matches.is_present("RESET") {
+            // this also sets default policy
             reset_rules();
-        }
+        }else {
+            // default policy
+            println!("{}", get_drop_policy_string());
+        }*/
         read_yaml(f_path);
     }
 
@@ -133,6 +138,7 @@ fn read_yaml(f_path: &str) {
 }
 
 fn parse_yaml(doc: &Yaml) {
+
     // Read all rules from yaml
     match doc {
         // Parse if template data is a hash object
@@ -153,14 +159,36 @@ fn parse_yaml(doc: &Yaml) {
     }
 }
 
-fn reset_rules() {
-    let mut s:String = "iptables -F".to_string();
-    s.push_str("\niptables -X");
-    s.push_str("\niptables -t nat -F");
-    s.push_str("\niptables -t nat -X");
-    s.push_str("\niptables -t mangle -F");
-    s.push_str("\niptables -t mangle -X");
-    println!("{}", s);
+fn get_drop_policy_string() -> String {
+//    let mut s:String="".to_string();
+    //let mut s:String=String::from("");
+    let mut s:String=String::new();
+
+    s.push_str("\niptables -t filter --policy INPUT DROP");
+    s.push_str("\niptables -t filter --policy FORWARD DROP");
+    s.push_str("\niptables -t filter --policy OUTPUT DROP");
+    s.push_str("\n");
+    s
+}
+
+fn reset_rules(reset:bool) {
+    //let mut s:String="".to_string();
+    let mut s:String=get_drop_policy_string();
+
+    if reset {
+        s.push_str("\niptables -t filter -F");
+        s.push_str("\niptables -t filter -X");
+        s.push_str("\niptables -t nat -F");
+        s.push_str("\niptables -t nat -X");
+        s.push_str("\niptables -t mangle -F");
+        s.push_str("\niptables -t mangle -X");
+
+        s.push_str("\niptables -t raw -F");
+        s.push_str("\niptables -t raw -X");
+        s.push_str("\niptables -t security -F");
+        s.push_str("\niptables -t security -X");
+    }
+    println!("{}\n", s);
 }
 
 fn parse_section(doc: &Yaml) {
@@ -305,12 +333,16 @@ fn parse_filter(doc: &Yaml) {
             for (k, v) in h {
                 let k = k.as_str().unwrap();
                 let v = v.as_str().unwrap();
-                match k {
-                    "input" | "output" | "forward" | "INPUT" | "OUTPUT" | "FORWARD" => {
+                let v=v.to_uppercase(); //FIXME: ? this is ugly
+                let v=v.as_str();
+//                match k {
+                match k.to_uppercase().as_str() {
+                    //"input" | "output" | "forward" | "INPUT" | "OUTPUT" | "FORWARD" => {
+                    "INPUT" | "OUTPUT" | "FORWARD" => {
                         match v {
-                            "drop" | "reject" | "accept" | "DROP" | "REJECT" | "ACCEPT" => println!("iptables -P {} {}", k.to_ascii_uppercase(), v.to_ascii_uppercase()),
+                            "DROP" | "REJECT" | "ACCEPT" => println!("iptables -P {} {}", k.to_ascii_uppercase(), v),//.to_ascii_uppercase()),
                             _ => {
-                                println!("Rules \"{}\" only accept options of \"drop\",\"reject\" or \"accept\"", k);
+                                println!("Rules \"{}\" only accept options of \"drop\",\"reject\" or \"accept\"", k);//FIXME: can has an enum of sorts? to be used in match also?
                                 exit(1);
                             }
                         }
