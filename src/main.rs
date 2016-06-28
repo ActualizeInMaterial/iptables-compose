@@ -332,6 +332,7 @@ fn parse_filter(doc: &Yaml) {
         &Yaml::Hash(ref h) => {
             for (k, v) in h {
                 let k = k.as_str().unwrap();
+//                let v = v.as_str().unwrap().to_uppercase().as_str();//borrowed value doesn't live long enough
                 let v = v.as_str().unwrap();
                 let v=v.to_uppercase(); //FIXME: ? this is ugly
                 let v=v.as_str();
