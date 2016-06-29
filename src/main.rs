@@ -1,3 +1,5 @@
+//TODO: use iptables-restore instead of iptables! so a difference in format! see:
+//etc/iptables/*.rules
 
 // YAML files as iptables configuration sources
 
